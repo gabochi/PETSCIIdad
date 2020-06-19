@@ -1,0 +1,125 @@
+program C64Project;
+
+// PETSCIIdad by gabochi, still a lot to improve...
+
+var
+	t : integer = 0;
+	expression : integer;
+	
+	i : byte;
+	j : byte;
+	k : byte;
+	
+	opcode : array[4] of byte;
+	opcodeindex : byte;
+	stack : byte;
+	temparray : array[256] of byte;
+	output : byte;
+
+	key : byte;
+	lastkey : byte;
+	
+    saddr : array[25] of integer;
+    caddr : array[25] of integer;
+
+begin
+
+//											Screen preparation
+
+	asm("	lda #0
+			sta $d020
+			sta $d021");
+	
+    definescreen();
+    CreateAddressTable( saddr, $0400, 40, 25 );
+	CreateAddressTable( caddr, $D800, 40, 25 );
+
+    ClearScreen($20, ^$0400);    
+	
+// 											"Game" loop begins
+    while(True) do
+    begin
+
+//											Cursor effect
+
+		screenmemory := AddressTable(saddr, 0, 0);
+		screenmemory[opcodeindex]:=(128 xor peek(screenmemory,opcodeindex));
+
+//											Read code, evaluate, write temparray
+ 		for i:=0 to 256 do
+		begin
+			
+			expression:=t;
+//											Four-operation code
+		    for j:=0 to 4 do
+			begin
+				stack:=opcode[j-1];
+				if stack=36 then stack:=t;
+				
+				if opcode[j]=34 then expression:=expression>>stack;
+				if opcode[j]=28 then expression:=expression<<stack;
+				if opcode[j]=17 then expression:=expression&stack;
+				if opcode[j]=31 then expression:=expression|stack;
+				if opcode[j]=40 then expression:=(expression xor stack);
+				if opcode[j]=35 then expression:=expression-stack;
+				if opcode[j]=29 then expression:=expression*stack;
+
+//											In the meanwhile, check for key interaction 	
+	
+					key:=getkey();
+				
+					if key=48 then 
+					begin
+						opcodeindex:=0;
+						lastkey:=key;
+					end;
+					
+					if key<>lastkey then
+					begin
+						if (key>48 and key<91) then 
+						begin
+							screenmemory[opcodeindex]:=key;						
+							lastkey:=key;
+							opcode[opcodeindex]:=key-48;
+							opcodeindex:=opcodeindex+1;	
+							if opcodeindex=4 then opcodeindex:=0;
+						end;
+					end;															
+				end;
+				
+			temparray[i]:=expression;
+			t:=t+1;	
+		end;
+
+
+//											Screen write	
+
+		for k:=0 to 2 do
+		begin
+			for j:=0 to 2 do
+			begin
+				screenmemory:= AddressTable(saddr, 4, 4+j*4+k*8);
+				for i:=0 to 128 do
+				begin
+						screenmemory[i+(i/32)*8]:=temparray[i+j*128];
+				end;
+			end;
+		end;
+
+		for k:=0 to 2 do
+		begin
+			for j:=0 to 2 do
+			begin
+				screenmemory:= AddressTable(caddr, 4, 4+j*4+k*8);
+				for i:=0 to 128 do
+				begin
+					screenmemory[i+(i/32)*8]:=temparray[i+j*128];
+				end;
+			end;
+		end;
+
+
+    end;
+    
+	loop();
+end.
