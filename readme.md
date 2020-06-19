@@ -1,5 +1,7 @@
 # PETSCIIdad
 
+![](peek.gif)
+
 Live-coding visuals for the C64, similar to ANSIedad.
 
 ## Instructions
@@ -16,7 +18,7 @@ X|Bitwise XOR
 M|Multiplication
 S|Substraction
 T|t
-0|Cursor "home" (NAO)
+zero| "home" (NOP)
 any other|Numerical value
 
 *Note that operations also have a numerical value!*
@@ -71,6 +73,7 @@ SMSA
 SMSO
 
 TAMO
+
 XSO
 ```
 
